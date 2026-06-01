@@ -1,0 +1,11 @@
+CREATE USER order_service_app WITH PASSWORD 'order_service_pass';
+GRANT CONNECT ON DATABASE order_service TO order_service_app;
+GRANT USAGE, CREATE ON SCHEMA public TO order_service_app;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO order_service_app;
+GRANT USAGE, SELECT, UPDATE ON ALL SEQUENCES IN SCHEMA public TO order_service_app;
+
+ALTER DEFAULT PRIVILEGES IN SCHEMA public
+    GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO order_service_app;
+
+ALTER DEFAULT PRIVILEGES IN SCHEMA public
+    GRANT USAGE, SELECT, UPDATE ON SEQUENCES TO order_service_app;
