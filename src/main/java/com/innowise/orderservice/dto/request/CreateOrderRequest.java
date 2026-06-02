@@ -9,5 +9,5 @@ public class CreateOrderRequest {
 
     private Long userId;
 
-    private List<OrderItemRequest> orderItems;
+    private List<OrderItemRequest> items;
 }

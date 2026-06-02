@@ -10,5 +10,5 @@ public class UpdateOrderRequest {
 
     private Status status;
 
-    private List<OrderItemRequest> orderItems;
+    private List<OrderItemRequest> items;
 }
