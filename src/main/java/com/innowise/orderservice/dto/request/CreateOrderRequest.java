@@ -1,5 +1,7 @@
 package com.innowise.orderservice.dto.request;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 import java.util.List;
@@ -7,7 +9,9 @@ import java.util.List;
 @Data
 public class CreateOrderRequest {
 
-    private Long userId;
+    @NotBlank
+    private String userEmail;
 
+    @NotNull
     private List<OrderItemRequest> items;
 }

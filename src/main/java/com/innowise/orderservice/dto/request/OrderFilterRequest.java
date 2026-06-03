@@ -1,6 +1,7 @@
 package com.innowise.orderservice.dto.request;
 
 import com.innowise.orderservice.utils.Status;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import org.springframework.format.annotation.DateTimeFormat;
 
@@ -16,5 +17,6 @@ public class OrderFilterRequest {
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
     private LocalDateTime createdTo;
 
+    @NotNull
     private List<Status> statuses;
 }
