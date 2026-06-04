@@ -1,10 +1,12 @@
 package com.innowise.orderservice.service;
 
+import com.innowise.orderservice.client.UserClient;
 import com.innowise.orderservice.dto.request.CreateOrderRequest;
 import com.innowise.orderservice.dto.request.OrderFilterRequest;
 import com.innowise.orderservice.dto.request.OrderItemRequest;
 import com.innowise.orderservice.dto.request.UpdateOrderRequest;
 import com.innowise.orderservice.dto.response.OrderResponse;
+import com.innowise.orderservice.dto.response.UserResponse;
 import com.innowise.orderservice.mapper.OrderItemMapper;
 import com.innowise.orderservice.mapper.OrderMapper;
 import com.innowise.orderservice.model.Item;
@@ -22,9 +24,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -36,29 +36,37 @@ public class OrderService {
     private final ItemRepository itemRepository;
     private final OrderMapper orderMapper;
     private final OrderItemMapper orderItemMapper;
+    private final UserClient userClient;
 
     @Transactional
     public OrderResponse createOrder(CreateOrderRequest request) {
         validateOrderItems(request.getItems());
 
+        UserResponse user = userClient.getUserByEmail(request.getUserEmail());
+
         Order order = orderMapper.toOrder(request);
+        order.setUserId(user.getId());
+        order.setUserEmail(user.getEmail());
+        order.setStatus(Status.CREATED);
+        order.setDeleted(false);
 
         addOrderItems(order, request.getItems());
 
-        order.setStatus(Status.CREATED);
-        order.setDeleted(false);
         order.setTotalPrice(calculateTotalPrice(order));
 
         Order savedOrder = orderRepository.save(order);
 
-        return orderMapper.toOrderResponse(savedOrder);
+        OrderResponse response = orderMapper.toOrderResponse(savedOrder);
+        response.setUser(user);
+
+        return response;
     }
 
     @Transactional(readOnly = true)
     public OrderResponse getOrderById(Long id) {
         Order order = findOrderById(id);
 
-        return orderMapper.toOrderResponse(order);
+        return buildOrderResponse(order);
     }
 
     @Transactional(readOnly = true)
@@ -75,14 +83,16 @@ public class OrderService {
 
         Page<Order> orders = orderRepository.findAll(specification, pageable);
 
-        return orders.map(orderMapper::toOrderResponse);
+        return orders.map(this::buildOrderResponse);
     }
 
     @Transactional(readOnly = true)
     public List<OrderResponse> getOrdersByUserId(Long userId) {
         List<Order> orders = orderRepository.findAllByUserIdAndDeletedFalse(userId);
 
-        return orderMapper.toOrderResponseList(orders);
+        return orders.stream()
+                .map(this::buildOrderResponse)
+                .toList();
     }
 
     @Transactional
@@ -103,7 +113,7 @@ public class OrderService {
 
         Order updatedOrder = orderRepository.save(order);
 
-        return orderMapper.toOrderResponse(updatedOrder);
+        return buildOrderResponse(updatedOrder);
     }
 
     @Transactional
@@ -120,20 +130,16 @@ public class OrderService {
                 .orElseThrow(() -> new RuntimeException("Order with id " + id + " not found"));
     }
 
-    private void addOrderItems(Order order, List<OrderItemRequest> orderItemRequests) {
-        Map<Long, Item> itemsById = getItemsById(orderItemRequests);
+    private OrderResponse buildOrderResponse(Order order) {
+        OrderResponse response = orderMapper.toOrderResponse(order);
 
-        for (OrderItemRequest orderItemRequest : orderItemRequests) {
-            Item item = itemsById.get(orderItemRequest.getItemId());
+        UserResponse user = userClient.getUserByEmail(order.getUserEmail());
+        response.setUser(user);
 
-            OrderItem orderItem = orderItemMapper.toOrderItem(orderItemRequest);
-            orderItem.setItem(item);
-
-            order.addOrderItem(orderItem);
-        }
+        return response;
     }
 
-    private Map<Long, Item> getItemsById(List<OrderItemRequest> orderItemRequests) {
+    private void addOrderItems(Order order, List<OrderItemRequest> orderItemRequests) {
         List<Long> itemIds = orderItemRequests.stream()
                 .map(OrderItemRequest::getItemId)
                 .distinct()
@@ -145,8 +151,17 @@ public class OrderService {
             throw new RuntimeException("Some items were not found");
         }
 
-        return items.stream()
+        Map<Long, Item> itemsById = items.stream()
                 .collect(Collectors.toMap(Item::getId, Function.identity()));
+
+        for (OrderItemRequest orderItemRequest : orderItemRequests) {
+            Item item = itemsById.get(orderItemRequest.getItemId());
+
+            OrderItem orderItem = orderItemMapper.toOrderItem(orderItemRequest);
+            orderItem.setItem(item);
+
+            order.addOrderItem(orderItem);
+        }
     }
 
     private Long calculateTotalPrice(Order order) {
@@ -161,6 +176,8 @@ public class OrderService {
             throw new IllegalArgumentException("Order items cannot be empty");
         }
 
+        Set<Long> itemIds = new HashSet<>();
+
         for (OrderItemRequest orderItem : orderItems) {
             if (orderItem.getItemId() == null) {
                 throw new IllegalArgumentException("Item id cannot be null");
@@ -168,6 +185,10 @@ public class OrderService {
 
             if (orderItem.getQuantity() == null || orderItem.getQuantity() <= 0) {
                 throw new IllegalArgumentException("Quantity must be greater than zero");
+            }
+
+            if (!itemIds.add(orderItem.getItemId())) {
+                throw new IllegalArgumentException("Duplicate item id in order: " + orderItem.getItemId());
             }
         }
     }

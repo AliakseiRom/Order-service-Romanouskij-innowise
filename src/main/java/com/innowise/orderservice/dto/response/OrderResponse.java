@@ -13,6 +13,8 @@ public class OrderResponse {
 
     private Long userId;
 
+    private String userEmail;
+
     private Status status;
 
     private Long totalPrice;
@@ -24,4 +26,6 @@ public class OrderResponse {
     private LocalDateTime updatedAt;
 
     private List<OrderItemResponse> items;
+
+    private UserResponse user;
 }
