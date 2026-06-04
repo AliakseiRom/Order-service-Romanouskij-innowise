@@ -140,19 +140,6 @@ public class OrderService {
     }
 
     private void addOrderItems(Order order, List<OrderItemRequest> orderItemRequests) {
-        Map<Long, Item> itemsById = getItemsById(orderItemRequests);
-
-        for (OrderItemRequest orderItemRequest : orderItemRequests) {
-            Item item = itemsById.get(orderItemRequest.getItemId());
-
-            OrderItem orderItem = orderItemMapper.toOrderItem(orderItemRequest);
-            orderItem.setItem(item);
-
-            order.addOrderItem(orderItem);
-        }
-    }
-
-    private Map<Long, Item> getItemsById(List<OrderItemRequest> orderItemRequests) {
         List<Long> itemIds = orderItemRequests.stream()
                 .map(OrderItemRequest::getItemId)
                 .distinct()
@@ -164,8 +151,17 @@ public class OrderService {
             throw new RuntimeException("Some items were not found");
         }
 
-        return items.stream()
+        Map<Long, Item> itemsById = items.stream()
                 .collect(Collectors.toMap(Item::getId, Function.identity()));
+
+        for (OrderItemRequest orderItemRequest : orderItemRequests) {
+            Item item = itemsById.get(orderItemRequest.getItemId());
+
+            OrderItem orderItem = orderItemMapper.toOrderItem(orderItemRequest);
+            orderItem.setItem(item);
+
+            order.addOrderItem(orderItem);
+        }
     }
 
     private Long calculateTotalPrice(Order order) {
