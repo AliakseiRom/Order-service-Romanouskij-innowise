@@ -14,6 +14,7 @@ import java.util.List;
 public interface OrderMapper {
 
     @Mapping(source = "orderItems", target = "items")
+    @Mapping(target = "user", ignore = true)
     OrderResponse toOrderResponse(Order order);
 
     List<OrderResponse> toOrderResponseList(List<Order> orders);
