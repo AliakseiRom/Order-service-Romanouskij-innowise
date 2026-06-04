@@ -7,6 +7,12 @@ import com.innowise.orderservice.dto.request.OrderItemRequest;
 import com.innowise.orderservice.dto.request.UpdateOrderRequest;
 import com.innowise.orderservice.dto.response.OrderResponse;
 import com.innowise.orderservice.dto.response.UserResponse;
+import com.innowise.orderservice.exception.DuplicateOrderItemException;
+import com.innowise.orderservice.exception.InvalidOrderItemQuantityException;
+import com.innowise.orderservice.exception.InvalidOrderItemsException;
+import com.innowise.orderservice.exception.ItemIdRequiredException;
+import com.innowise.orderservice.exception.ItemsNotFoundException;
+import com.innowise.orderservice.exception.OrderNotFoundException;
 import com.innowise.orderservice.mapper.OrderItemMapper;
 import com.innowise.orderservice.mapper.OrderMapper;
 import com.innowise.orderservice.model.Item;
@@ -24,7 +30,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -121,13 +131,13 @@ public class OrderService {
         int updatedRows = orderRepository.softDeleteById(id);
 
         if (updatedRows == 0) {
-            throw new RuntimeException("Order with id " + id + " not found");
+            throw new OrderNotFoundException("Order with id " + id + " not found");
         }
     }
 
     private Order findOrderById(Long id) {
         return orderRepository.findByIdAndDeletedFalse(id)
-                .orElseThrow(() -> new RuntimeException("Order with id " + id + " not found"));
+                .orElseThrow(() -> new OrderNotFoundException("Order with id " + id + " not found"));
     }
 
     private OrderResponse buildOrderResponse(Order order) {
@@ -148,7 +158,7 @@ public class OrderService {
         List<Item> items = itemRepository.findAllByIdIn(itemIds);
 
         if (items.size() != itemIds.size()) {
-            throw new RuntimeException("Some items were not found");
+            throw new ItemsNotFoundException("Some items were not found");
         }
 
         Map<Long, Item> itemsById = items.stream()
@@ -173,22 +183,22 @@ public class OrderService {
 
     private void validateOrderItems(Collection<OrderItemRequest> orderItems) {
         if (orderItems == null || orderItems.isEmpty()) {
-            throw new IllegalArgumentException("Order items cannot be empty");
+            throw new InvalidOrderItemsException("Order items cannot be empty");
         }
 
         Set<Long> itemIds = new HashSet<>();
 
         for (OrderItemRequest orderItem : orderItems) {
             if (orderItem.getItemId() == null) {
-                throw new IllegalArgumentException("Item id cannot be null");
+                throw new ItemIdRequiredException("Item id cannot be null");
             }
 
             if (orderItem.getQuantity() == null || orderItem.getQuantity() <= 0) {
-                throw new IllegalArgumentException("Quantity must be greater than zero");
+                throw new InvalidOrderItemQuantityException("Quantity must be greater than zero");
             }
 
             if (!itemIds.add(orderItem.getItemId())) {
-                throw new IllegalArgumentException("Duplicate item id in order: " + orderItem.getItemId());
+                throw new DuplicateOrderItemException("Duplicate item id in order: " + orderItem.getItemId());
             }
         }
     }
