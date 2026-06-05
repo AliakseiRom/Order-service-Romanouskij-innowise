@@ -1,0 +1,22 @@
+spring:
+  application:
+    name: orderservice-test
+
+  liquibase:
+    change-log: classpath:/db/changelog/db.changelog-master.yaml
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      user-service:
+        sliding-window-size: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 1s
+        permitted-number-of-calls-in-half-open-state: 2
