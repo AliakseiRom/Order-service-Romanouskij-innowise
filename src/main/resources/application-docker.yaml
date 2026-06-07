@@ -1,24 +1,24 @@
-spring:
-  application:
-    name: orderservice
+server:
+  port: 8082
 
+spring:
   datasource:
     url: ${DB_URL}
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
 
   liquibase:
-    change-log: classpath:/db/changelog/db.changelog-master.yaml
+    change-log: classpath:db/changelog/db.changelog-master.yaml
 
   jpa:
     hibernate:
       ddl-auto: validate
     properties:
       hibernate:
-        dialect: "org.hibernate.dialect.PostgreSQLDialect"
+        dialect: org.hibernate.dialect.PostgreSQLDialect
 
 user-service:
-  url: ${USER_SERVICE_URL}
+  url: ${USER_SERVICE_URL_DOCKER}
 
 resilience4j:
   circuitbreaker:
@@ -28,6 +28,3 @@ resilience4j:
         failure-rate-threshold: 50
         wait-duration-in-open-state: 10s
         permitted-number-of-calls-in-half-open-state: 2
-
-server:
-  port: 8082

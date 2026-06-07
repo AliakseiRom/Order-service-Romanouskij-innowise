@@ -1,3 +1,6 @@
 databaseChangeLog:
   - include:
       file: db/changelog/001-create-order-service-tables.yaml
+
+  - include:
+      file: db/changelog/002-insert-default-items.yaml
