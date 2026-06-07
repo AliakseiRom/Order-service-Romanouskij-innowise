@@ -1,0 +1,42 @@
+#!/bin/bash
+set -e
+
+echo "Creating order service application database user..."
+
+psql -v ON_ERROR_STOP=1 \
+  --username "$POSTGRES_USER" \
+  --dbname "$DB_NAME" <<-EOSQL
+
+DO
+\$\$
+BEGIN
+   IF NOT EXISTS (
+      SELECT FROM pg_catalog.pg_roles
+      WHERE rolname = '${DB_USERNAME}'
+   ) THEN
+      CREATE ROLE ${DB_USERNAME} LOGIN PASSWORD '${DB_PASSWORD}';
+   END IF;
+END
+\$\$;
+
+GRANT CONNECT ON DATABASE ${DB_NAME} TO ${DB_USERNAME};
+
+GRANT USAGE, CREATE ON SCHEMA public TO ${DB_USERNAME};
+
+GRANT SELECT, INSERT, UPDATE, DELETE
+ON ALL TABLES IN SCHEMA public
+TO ${DB_USERNAME};
+
+GRANT USAGE, SELECT, UPDATE
+ON ALL SEQUENCES IN SCHEMA public
+TO ${DB_USERNAME};
+
+ALTER DEFAULT PRIVILEGES IN SCHEMA public
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO ${DB_USERNAME};
+
+ALTER DEFAULT PRIVILEGES IN SCHEMA public
+GRANT USAGE, SELECT, UPDATE ON SEQUENCES TO ${DB_USERNAME};
+
+EOSQL
+
+echo "Order service application user created successfully."

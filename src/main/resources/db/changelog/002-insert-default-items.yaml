@@ -1,0 +1,52 @@
+databaseChangeLog:
+  - changeSet:
+      id: 002-insert-default-items
+      author: order-service
+      changes:
+        - insert:
+            tableName: items
+            columns:
+              - column:
+                  name: name
+                  value: Phone
+              - column:
+                  name: price
+                  valueNumeric: 500
+              - column:
+                  name: created_at
+                  valueComputed: CURRENT_TIMESTAMP
+              - column:
+                  name: updated_at
+                  valueComputed: CURRENT_TIMESTAMP
+
+        - insert:
+            tableName: items
+            columns:
+              - column:
+                  name: name
+                  value: Laptop
+              - column:
+                  name: price
+                  valueNumeric: 1500
+              - column:
+                  name: created_at
+                  valueComputed: CURRENT_TIMESTAMP
+              - column:
+                  name: updated_at
+                  valueComputed: CURRENT_TIMESTAMP
+
+        - insert:
+            tableName: items
+            columns:
+              - column:
+                  name: name
+                  value: Mouse
+              - column:
+                  name: price
+                  valueNumeric: 50
+              - column:
+                  name: created_at
+                  valueComputed: CURRENT_TIMESTAMP
+              - column:
+                  name: updated_at
+                  valueComputed: CURRENT_TIMESTAMP
