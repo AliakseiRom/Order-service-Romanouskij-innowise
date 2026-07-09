@@ -13,6 +13,7 @@ import com.innowise.orderservice.exception.InvalidOrderItemsException;
 import com.innowise.orderservice.exception.ItemIdRequiredException;
 import com.innowise.orderservice.exception.ItemsNotFoundException;
 import com.innowise.orderservice.exception.OrderNotFoundException;
+import com.innowise.orderservice.kafka.event.CreatePaymentEvent;
 import com.innowise.orderservice.mapper.OrderItemMapper;
 import com.innowise.orderservice.mapper.OrderMapper;
 import com.innowise.orderservice.model.Item;
@@ -201,5 +202,19 @@ public class OrderService {
                 throw new DuplicateOrderItemException("Duplicate item id in order: " + orderItem.getItemId());
             }
         }
+    }
+
+    @Transactional
+    public void handleCreatePaymentEvent(CreatePaymentEvent event) {
+        Order order = orderRepository.findById(event.getOrderId())
+                .orElseThrow(() -> new RuntimeException("Order not found"));
+
+        if ("SUCCESS".equals(event.getPaymentStatus())) {
+            order.setStatus(Status.PAID);
+        } else if ("FAILED".equals(event.getPaymentStatus())) {
+            order.setStatus(Status.CANCELLED);
+        }
+
+        orderRepository.save(order);
     }
 }
